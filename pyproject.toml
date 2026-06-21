@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "cascade-review"
+version = "0.1.0"
+description = "AI code reviewer with SonarQube simulation, blast radius analysis, and smart model routing"
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Vyshakh G Nair", email = "vyshakh@loqo.ai" }]
+keywords = ["code-review", "ai", "llm", "sonarqube", "static-analysis", "developer-tools"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Quality Assurance",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "requests>=2.31.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0", "pytest-cov", "black", "ruff"]
+
+[project.urls]
+Homepage = "https://github.com/vyshakhgnair/cascade-review"
+Repository = "https://github.com/vyshakhgnair/cascade-review"
+Issues = "https://github.com/vyshakhgnair/cascade-review/issues"
+
+[project.scripts]
+cascade = "cascade.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["cascade*"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

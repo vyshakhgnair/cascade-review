@@ -1,0 +1,35 @@
+name: Cascade Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  cascade-review:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Cascade Review
+        uses: vyshakhgnair/cascade-review@v1
+        with:
+          groq_api_key: ${{ secrets.GROQ_API_KEY }}
+          output_format: markdown
+          severity_threshold: warning
+          fail_on_secrets: true
+
+      # Optional: post the review as a PR comment
+      - name: Post review as PR comment
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            // cascade --output markdown > review.md
+            // then read and post here

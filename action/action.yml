@@ -1,0 +1,69 @@
+name: Cascade Review
+description: AI code reviewer — SonarQube simulation, blast radius analysis, and smart LLM routing
+author: vyshakhgnair
+
+inputs:
+  groq_api_key:
+    description: Groq API key (free tier available at console.groq.com)
+    required: false
+  openrouter_api_key:
+    description: OpenRouter API key (29 free models)
+    required: false
+  anthropic_api_key:
+    description: Anthropic API key for Claude models
+    required: false
+  openai_api_key:
+    description: OpenAI API key
+    required: false
+  gemini_api_key:
+    description: Google Gemini API key
+    required: false
+  deepseek_api_key:
+    description: DeepSeek API key
+    required: false
+  provider:
+    description: "Model provider to use: groq / openrouter / anthropic / openai / gemini / deepseek"
+    required: false
+    default: groq
+  model:
+    description: Model name (defaults to provider's recommended free model)
+    required: false
+  output_format:
+    description: "Output format: terminal / markdown / sarif / json"
+    required: false
+    default: markdown
+  severity_threshold:
+    description: "Minimum severity to report: critical / warning / info"
+    required: false
+    default: warning
+  fail_on_secrets:
+    description: Fail the action if secrets are detected
+    required: false
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    - name: Install cascade-review
+      shell: bash
+      run: pip install cascade-review
+
+    - name: Run cascade review
+      shell: bash
+      env:
+        GROQ_API_KEY: ${{ inputs.groq_api_key }}
+        OPENROUTER_API_KEY: ${{ inputs.openrouter_api_key }}
+        ANTHROPIC_API_KEY: ${{ inputs.anthropic_api_key }}
+        OPENAI_API_KEY: ${{ inputs.openai_api_key }}
+        GEMINI_API_KEY: ${{ inputs.gemini_api_key }}
+        DEEPSEEK_API_KEY: ${{ inputs.deepseek_api_key }}
+      run: |
+        git diff ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | \
+          cascade \
+            --output ${{ inputs.output_format }} \
+            ${{ inputs.provider != '' && format('--provider {0}', inputs.provider) || '' }} \
+            ${{ inputs.model != '' && format('--model {0}', inputs.model) || '' }}
+
+branding:
+  icon: shield
+  color: blue
