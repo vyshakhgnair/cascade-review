@@ -1,3 +1,6 @@
+import sys, io
+if sys.stdout.encoding != "utf-8":
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 from typing import List
 from cascade.analyzers.static.secrets import SecretFinding
 from cascade.analyzers.static.sonar import SonarFinding
@@ -23,7 +26,7 @@ SEVERITY_COLOR = {
 def clr(text, sev): return f"{SEVERITY_COLOR.get(sev, '')}{text}{R}"
 def hdr(title): print(f"\n{DIM}{'─' * 58}{R}\n  {BOLD}{title}{R}")
 
-def print_report(summary, secrets, sonar, blast, risk, drifts, bugs, llm_det, config):
+def print_report(summary, secrets, sonar, blast, risk, drifts, bugs, llm_det, fixes, config):
     print(f"\n{BOLD}  cascade-review{R}  {DIM}github.com/vyshakhgnair/cascade-review{R}")
 
     # Change summary
@@ -85,5 +88,12 @@ def print_report(summary, secrets, sonar, blast, risk, drifts, bugs, llm_det, co
         hdr("BUGS FOUND")
         for b in bugs:
             print(f"  {clr(b.get('severity', 'WARNING'), b.get('severity', 'WARNING'))}  {b['description']}")
+
+    # Fix suggestions
+    if fixes:
+        hdr("SUGGESTED FIXES")
+        for fix in fixes:
+            effort = fix.get("effort", "small")
+            print(f"  {GRN}→{R} {fix['description']}  {DIM}[{effort}]{R}")
 
     print(f"\n{DIM}{'─' * 58}{R}\n")

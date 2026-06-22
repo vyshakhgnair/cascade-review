@@ -36,6 +36,10 @@ inputs:
     description: "Minimum severity to report: critical / warning / info"
     required: false
     default: warning
+  no_llm:
+    description: Skip LLM analysis, run static checks only (no API key needed)
+    required: false
+    default: "false"
   fail_on_secrets:
     description: Fail the action if secrets are detected
     required: false
@@ -49,6 +53,7 @@ runs:
       run: pip install cascade-review
 
     - name: Run cascade review
+      id: run
       shell: bash
       env:
         GROQ_API_KEY: ${{ inputs.groq_api_key }}
@@ -58,11 +63,48 @@ runs:
         GEMINI_API_KEY: ${{ inputs.gemini_api_key }}
         DEEPSEEK_API_KEY: ${{ inputs.deepseek_api_key }}
       run: |
-        git diff ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | \
+        OUTPUT=$(git diff ${{ github.event.pull_request.base.sha }} ${{ github.sha }} | \
           cascade \
             --output ${{ inputs.output_format }} \
             ${{ inputs.provider != '' && format('--provider {0}', inputs.provider) || '' }} \
-            ${{ inputs.model != '' && format('--model {0}', inputs.model) || '' }}
+            ${{ inputs.model != '' && format('--model {0}', inputs.model) || '' }} \
+            ${{ inputs.no_llm == 'true' && '--no-llm' || '' }} \
+          2>&1) || EXIT_CODE=$?
+        echo "$OUTPUT"
+        echo "cascade_output<<EOF" >> "$GITHUB_OUTPUT"
+        echo "$OUTPUT" >> "$GITHUB_OUTPUT"
+        echo "EOF" >> "$GITHUB_OUTPUT"
+        if [ "${{ inputs.output_format }}" = "sarif" ]; then
+          echo "$OUTPUT" > cascade-results.sarif
+        fi
+        if [ "${EXIT_CODE:-0}" -eq 2 ] && [ "${{ inputs.fail_on_secrets }}" = "true" ]; then
+          echo "::error::Secrets detected in diff — review cascade output above"
+          exit 2
+        fi
+
+    - name: Comment on PR
+      if: github.event_name == 'pull_request' && inputs.output_format == 'markdown'
+      uses: actions/github-script@v7
+      env:
+        CASCADE_OUTPUT: ${{ steps.run.outputs.cascade_output }}
+      with:
+        script: |
+          const body = process.env.CASCADE_OUTPUT || '';
+          if (body.trim()) {
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: body,
+            });
+          }
+
+    - name: Upload SARIF
+      if: inputs.output_format == 'sarif' && always()
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: cascade-results.sarif
+      continue-on-error: true
 
 branding:
   icon: shield

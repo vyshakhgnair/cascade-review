@@ -10,16 +10,21 @@ class BlastRadiusResult:
     affected_files: Dict[str, List[str]] = field(default_factory=dict)
     risk_level: str = "LOW"
 
+_SCAN_GLOBS = ("*.py", "*.js", "*.ts", "*.tsx", "*.jsx", "*.mjs")
+
 def _scan_repo(root: Path, symbols: List[str]) -> Dict[str, List[str]]:
     affected = {}
-    for py_file in root.rglob("*.py"):
-        try:
-            content = py_file.read_text(encoding="utf-8", errors="ignore")
-            matched = [s for s in symbols if re.search(r'\b' + re.escape(s) + r'\b', content)]
-            if matched:
-                affected[str(py_file.relative_to(root))] = matched
-        except Exception:
-            continue
+    for glob in _SCAN_GLOBS:
+        for src_file in root.rglob(glob):
+            if "node_modules" in src_file.parts or "vendor" in src_file.parts:
+                continue
+            try:
+                content = src_file.read_text(encoding="utf-8", errors="ignore")
+                matched = [s for s in symbols if re.search(r'\b' + re.escape(s) + r'\b', content)]
+                if matched:
+                    affected[str(src_file.relative_to(root))] = matched
+            except Exception:
+                continue
     return affected
 
 def analyze(files: List[FileDiff], repo_root: str = ".") -> BlastRadiusResult:

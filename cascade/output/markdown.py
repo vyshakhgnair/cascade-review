@@ -4,7 +4,7 @@ from cascade.analyzers.static.sonar import SonarFinding
 from cascade.analyzers.static.blast_radius import BlastRadiusResult
 from cascade.analyzers.static.regression_risk import RegressionRisk
 
-def render(summary, secrets, sonar, blast, risk, bugs) -> str:
+def render(summary, secrets, sonar, blast, risk, bugs, fixes=None) -> str:
     lines = ["## Cascade Review\n"]
 
     if summary.get("summary"):
@@ -38,6 +38,12 @@ def render(summary, secrets, sonar, blast, risk, bugs) -> str:
         lines.append("### Bugs Found\n")
         for b in bugs:
             lines.append(f"- **{b.get('severity', 'WARNING')}** {b['description']}")
+        lines.append("")
+
+    if fixes:
+        lines.append("### Suggested Fixes\n")
+        for fix in fixes:
+            lines.append(f"- {fix['description']} *({fix.get('effort', 'small')})*")
         lines.append("")
 
     lines += ["---",

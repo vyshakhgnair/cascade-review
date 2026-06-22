@@ -20,9 +20,41 @@ SECRET_PATTERNS = [
     (r'(?i)aws_access_key_id\s*=\s*["\']?([A-Z0-9]{20})["\']?', "AWS Access Key"),
     (r'(?i)aws_secret_access_key\s*=\s*["\']?([A-Za-z0-9/+=]{40})["\']?', "AWS Secret Key"),
     (r'ghp_[A-Za-z0-9]{36}', "GitHub Personal Token"),
+    (r'gho_[A-Za-z0-9]{36}', "GitHub OAuth Token"),
+    (r'github_pat_[A-Za-z0-9_]{82}', "GitHub Fine-Grained PAT"),
     (r'(?i)private_key\s*=\s*["\']-----BEGIN', "Private Key"),
+    (r'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----', "SSH/TLS Private Key"),
     (r'(?i)bearer\s+[A-Za-z0-9\-_]{20,}', "Bearer Token"),
+    (r'sk_live_[A-Za-z0-9]{24,}', "Stripe Secret Key"),
+    (r'rk_live_[A-Za-z0-9]{24,}', "Stripe Restricted Key"),
+    (r'xox[bporas]-[A-Za-z0-9\-]{10,}', "Slack Token"),
+    (r'eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}', "JWT Token"),
+    (r'SG\.[A-Za-z0-9_-]{22}\.[A-Za-z0-9_-]{43}', "SendGrid API Key"),
+    (r'sk-ant-api03-[A-Za-z0-9_-]{93}', "Anthropic API Key"),
+    (r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}', None),
 ]
+
+def _is_likely_uuid_false_positive(line: str) -> bool:
+    return bool(re.search(r'(?i)(uuid|guid|trace.?id|request.?id|correlation)', line))
+
+def scan(files: List[FileDiff]) -> List[SecretFinding]:
+    findings = []
+    for f in files:
+        for line in f.added_lines:
+            for pattern, secret_type in SECRET_PATTERNS:
+                if secret_type is None:
+                    continue
+                if re.search(pattern, line):
+                    preview = line.strip()
+                    if len(preview) > 80:
+                        preview = preview[:77] + "..."
+                    findings.append(SecretFinding(
+                        file=f.path,
+                        line_content=preview,
+                        secret_type=secret_type,
+                    ))
+                    break
+    return findings
 
 def scan(files: List[FileDiff]) -> List[SecretFinding]:
     findings = []

@@ -2,25 +2,34 @@ from typing import List
 from cascade.diff_parser import FileDiff
 from cascade.clients.base import BaseClient
 
-PROMPT = """Analyze this git diff and respond in exactly this format:
-SUMMARY: <2-3 sentence plain English summary of what changed>
-TYPE: <LOGIC|REFACTOR|FEATURE|BUGFIX|COSMETIC>
-RISKS: <comma-separated risks, or "None">
+PROMPT = """Analyze this git diff and respond in exactly this format — no extra text:
+SUMMARY: <2-3 sentence plain English summary of what changed and why>
+TYPE: <LOGIC|REFACTOR|FEATURE|BUGFIX|COSMETIC|CONFIG|TEST|DOCS>
+RISKS: <comma-separated specific risks, or "None">
+
+Focus on intent, not mechanics. Say what the change accomplishes, not "added lines to file X".
 
 Diff:
 {diff}"""
 
-def summarize(files: List[FileDiff], client: BaseClient) -> dict:
+def _build_diff_text(files: List[FileDiff], max_chars: int = 4000) -> str:
     parts = []
     for f in files:
-        parts.append(f"File: {f.path} (+{len(f.added_lines)} -{len(f.removed_lines)} lines)")
+        parts.append(f"--- {f.path} (+{len(f.added_lines)} -{len(f.removed_lines)})")
         if f.changed_functions:
-            parts.append(f"Changed functions: {', '.join(f.changed_functions)}")
-        parts.extend(f.added_lines[:30])
+            parts.append(f"  functions: {', '.join(f.changed_functions)}")
+        for line in f.removed_lines[:15]:
+            parts.append(f"- {line}")
+        for line in f.added_lines[:30]:
+            parts.append(f"+ {line}")
+        parts.append("")
+    text = "\n".join(parts)
+    return text[:max_chars]
 
+def summarize(files: List[FileDiff], client: BaseClient) -> dict:
     messages = [
-        {"role": "system", "content": "You are a senior code reviewer. Be concise and specific."},
-        {"role": "user", "content": PROMPT.format(diff="\n".join(parts)[:3500])},
+        {"role": "system", "content": "You are a senior code reviewer. Be concise and specific. Never guess — if unsure, say so."},
+        {"role": "user", "content": PROMPT.format(diff=_build_diff_text(files))},
     ]
     return _parse(client.chat(messages, max_tokens=512))
 
