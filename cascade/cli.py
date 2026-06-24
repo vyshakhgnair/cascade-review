@@ -29,6 +29,19 @@ API_KEY_ENV = {
     "mistral": "MISTRAL_API_KEY", "together": "TOGETHER_API_KEY",
 }
 
+# Privacy: providers that guarantee no training on API inputs (paid tiers / explicit policy)
+PROVIDER_PRIVACY = {
+    "ollama":     "local",      # runs on your machine, nothing leaves
+    "openai":     "no-train",   # API inputs not used for training (paid)
+    "anthropic":  "no-train",   # API inputs not used for training
+    "groq":       "unclear",    # free tier — check current ToS
+    "openrouter": "unclear",    # proxies to other providers, varies by model
+    "deepseek":   "unclear",    # free tier — may use inputs for training
+    "mistral":    "no-train",   # API inputs not used for training
+    "together":   "unclear",    # check current ToS
+    "gemini":     "unclear",    # free tier — check current ToS
+}
+
 def build_client(config: dict, tier: str, provider_override: str = None, model_override: str = None):
     tier_cfg = config["models"].get(tier, {})
     provider = provider_override or tier_cfg.get("provider", "groq")
@@ -48,21 +61,29 @@ def build_client(config: dict, tier: str, provider_override: str = None, model_o
 
 
 def run_list_providers():
-    print(f"\n  {'Provider':<14} {'Type':<10} {'API Key Env':<22} {'Status'}")
-    print(f"  {'─' * 60}")
-    for name, entry in PROVIDERS.items():
+    DIM, R, GRN, RED, YLW = "\033[2m", "\033[0m", "\033[92m", "\033[91m", "\033[93m"
+    PRIVACY_LABEL = {
+        "local":    f"{GRN}✓ local{R}",
+        "no-train": f"{GRN}✓ no-train{R}",
+        "unclear":  f"{YLW}⚠ check ToS{R}",
+    }
+    print(f"\n  {'Provider':<14} {'Key Env':<22} {'Privacy':<20} {'Status'}")
+    print(f"  {'─' * 72}")
+    for name in PROVIDERS:
         env_var = API_KEY_ENV.get(name, "")
+        privacy = PRIVACY_LABEL.get(PROVIDER_PRIVACY.get(name, "unclear"), f"{YLW}⚠ check ToS{R}")
         if name == "ollama":
             status = "local (no key needed)"
         elif env_var and os.environ.get(env_var):
-            status = "\033[92m✓ configured\033[0m"
+            status = f"{GRN}✓ configured{R}"
         elif env_var:
-            status = "\033[91m✗ not set\033[0m"
+            status = f"{RED}✗ not set{R}"
         else:
-            status = "\033[93m? unknown\033[0m"
-        ptype = "local" if name == "ollama" else "cloud"
-        print(f"  {name:<14} {ptype:<10} {env_var or '—':<22} {status}")
-    print()
+            status = f"{YLW}? unknown{R}"
+        print(f"  {name:<14} {env_var or '—':<22} {privacy:<30} {status}")
+    print(f"\n  {DIM}Privacy: 'local' = runs on your machine, 'no-train' = provider won't train on inputs,{R}")
+    print(f"  {DIM}'check ToS' = free tier may use inputs for model training — avoid for proprietary code.{R}")
+    print(f"  {DIM}Use --no-llm for static-only analysis (no code sent anywhere).{R}\n")
 
 
 def _status(msg):
@@ -138,6 +159,11 @@ def main():
     if not args.no_llm:
         try:
             client = build_client(config, tier, args.provider, args.model)
+            tier_cfg = config["models"].get(tier, {})
+            provider = args.provider or tier_cfg.get("provider", "groq")
+            if PROVIDER_PRIVACY.get(provider) == "unclear" and sys.stderr.isatty():
+                print(f"\033[93m  ⚠ Provider '{provider}' may use your code for model training (free tier).\033[0m", file=sys.stderr)
+                print(f"\033[2m    Use --no-llm for static-only, or switch to ollama/anthropic/openai for private review.\033[0m", file=sys.stderr)
             _status("Generating change summary")
             summary_result = change_summary.summarize(files, client)
             _status("Scanning for bugs")
