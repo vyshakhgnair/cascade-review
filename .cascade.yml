@@ -1,0 +1,48 @@
+# cascade-review configuration
+# Copy this file to .cascade.yml in your project root
+# Run: cascade init  to auto-generate from detected setup
+
+models:
+  # Tier 1 — local model (no API key, works offline)
+  local:
+    provider: ollama
+    model: qwen2.5-coder:3b
+    base_url: http://localhost:11434
+
+  # Tier 2 — fast cloud model (free tier available)
+  mid:
+    provider: groq
+    model: llama-3.3-70b-versatile
+    api_key_env: GROQ_API_KEY
+    # Other options:
+    # provider: deepseek  model: deepseek-coder  api_key_env: DEEPSEEK_API_KEY
+    # provider: openai    model: gpt-4o-mini     api_key_env: OPENAI_API_KEY
+
+  # Tier 3 — frontier model (largest context, deepest reasoning)
+  frontier:
+    provider: openrouter
+    model: deepseek/deepseek-chat-v3-0324:free
+    api_key_env: OPENROUTER_API_KEY
+    # Other options:
+    # provider: anthropic  model: claude-sonnet-4-6  api_key_env: ANTHROPIC_API_KEY
+    # provider: gemini     model: gemini-2.0-flash   api_key_env: GEMINI_API_KEY
+    # provider: openai     model: gpt-4o             api_key_env: OPENAI_API_KEY
+
+routing:
+  local_max_lines: 50      # diffs under this → local model
+  mid_max_lines: 200       # diffs under this → mid model
+  force_tier: auto         # auto / local / mid / frontier
+  fallback: mid            # if frontier key unavailable, fall back to this
+
+review:
+  severity_threshold: warning   # critical / warning / info (what to show)
+  explain: false                # true = add explanations (learning mode)
+  exclude:
+    - migrations/
+    - vendor/
+    - node_modules/
+    - "*.lock"
+    - "*.min.js"
+
+output:
+  format: terminal   # terminal / markdown / sarif / json

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cascade-review"
-version = "0.2.1"
+version = "0.2.2"
 description = "AI code reviewer with SonarQube simulation, blast radius analysis, and smart model routing"
 readme = "README.md"
 license = { text = "MIT" }

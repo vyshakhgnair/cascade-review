@@ -88,11 +88,12 @@ def run_list_providers():
         "no-train": f"{GRN}✓ no-train{R}",
         "unclear":  f"{YLW}⚠ check ToS{R}",
     }
-    print(f"\n  {'Provider':<14} {'Default Model':<40} {'Key Env':<22} {'Status'}")
-    print(f"  {'─' * 100}")
+    print(f"\n  {'Provider':<14} {'Default Model':<40} {'Privacy':<20} {'Key Env':<22} {'Status'}")
+    print(f"  {'─' * 120}")
     for name in PROVIDERS:
         env_var = API_KEY_ENV.get(name, "")
         default_model = PROVIDER_DEFAULT_MODELS.get(name, "—")
+        privacy = PRIVACY_LABEL.get(PROVIDER_PRIVACY.get(name, "unclear"), f"{YLW}⚠ check ToS{R}")
         if name == "ollama":
             status = "local (no key needed)"
         elif env_var and os.environ.get(env_var):
@@ -101,9 +102,10 @@ def run_list_providers():
             status = f"{RED}✗ not set{R}"
         else:
             status = f"{YLW}? unknown{R}"
-        print(f"  {name:<14} {default_model:<40} {env_var or '—':<22} {status}")
+        print(f"  {name:<14} {default_model:<40} {privacy:<30} {env_var or '—':<22} {status}")
     print(f"\n  {DIM}Privacy: 'local' = runs on your machine, 'no-train' = provider won't train on inputs,{R}")
     print(f"  {DIM}'check ToS' = free tier may use inputs for model training — avoid for proprietary code.{R}")
+    print(f"  {DIM}Override model with: cascade --provider <name> --model <model-id>{R}")
     print(f"  {DIM}Use --no-llm for static-only analysis (no code sent anywhere).{R}\n")
 
 
@@ -183,7 +185,7 @@ def main():
         prog="cascade",
         description="AI code reviewer — SonarQube simulation, blast radius, smart model routing.",
     )
-    parser.add_argument("--version", action="version", version="cascade-review 0.2.1")
+    parser.add_argument("--version", action="version", version="cascade-review 0.2.2")
     parser.add_argument("--staged", action="store_true", help="Review staged changes only")
     parser.add_argument("--tier", choices=["local", "mid", "frontier"], help="Force model tier")
     parser.add_argument("--provider", choices=list(PROVIDERS), help="Override provider")
