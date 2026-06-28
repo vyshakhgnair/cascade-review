@@ -46,10 +46,27 @@ PROVIDER_PRIVACY = {
     "gemini":     "unclear",    # free tier — check current ToS
 }
 
+PROVIDER_DEFAULT_MODELS = {
+    "groq": "llama-3.1-8b-instant",
+    "openai": "gpt-4o-mini",
+    "anthropic": "claude-sonnet-4-20250514",
+    "deepseek": "deepseek-chat",
+    "openrouter": "deepseek/deepseek-chat-v3-0324:free",
+    "mistral": "mistral-small-latest",
+    "together": "meta-llama/Llama-3-8b-chat-hf",
+    "ollama": "qwen2.5-coder:3b",
+    "gemini": "gemini-2.0-flash",
+}
+
 def build_client(config: dict, tier: str, provider_override: str = None, model_override: str = None):
     tier_cfg = config["models"].get(tier, {})
     provider = provider_override or tier_cfg.get("provider", "groq")
-    model = model_override or tier_cfg.get("model", "llama-3.3-70b-versatile")
+    if model_override:
+        model = model_override
+    elif provider_override and provider_override != tier_cfg.get("provider"):
+        model = PROVIDER_DEFAULT_MODELS.get(provider, "llama-3.1-8b-instant")
+    else:
+        model = tier_cfg.get("model", PROVIDER_DEFAULT_MODELS.get(provider, "llama-3.1-8b-instant"))
     api_key = resolve_api_key(tier_cfg)
     base_url = tier_cfg.get("base_url")
 
@@ -71,11 +88,11 @@ def run_list_providers():
         "no-train": f"{GRN}✓ no-train{R}",
         "unclear":  f"{YLW}⚠ check ToS{R}",
     }
-    print(f"\n  {'Provider':<14} {'Key Env':<22} {'Privacy':<20} {'Status'}")
-    print(f"  {'─' * 72}")
+    print(f"\n  {'Provider':<14} {'Default Model':<40} {'Key Env':<22} {'Status'}")
+    print(f"  {'─' * 100}")
     for name in PROVIDERS:
         env_var = API_KEY_ENV.get(name, "")
-        privacy = PRIVACY_LABEL.get(PROVIDER_PRIVACY.get(name, "unclear"), f"{YLW}⚠ check ToS{R}")
+        default_model = PROVIDER_DEFAULT_MODELS.get(name, "—")
         if name == "ollama":
             status = "local (no key needed)"
         elif env_var and os.environ.get(env_var):
@@ -84,7 +101,7 @@ def run_list_providers():
             status = f"{RED}✗ not set{R}"
         else:
             status = f"{YLW}? unknown{R}"
-        print(f"  {name:<14} {env_var or '—':<22} {privacy:<30} {status}")
+        print(f"  {name:<14} {default_model:<40} {env_var or '—':<22} {status}")
     print(f"\n  {DIM}Privacy: 'local' = runs on your machine, 'no-train' = provider won't train on inputs,{R}")
     print(f"  {DIM}'check ToS' = free tier may use inputs for model training — avoid for proprietary code.{R}")
     print(f"  {DIM}Use --no-llm for static-only analysis (no code sent anywhere).{R}\n")
