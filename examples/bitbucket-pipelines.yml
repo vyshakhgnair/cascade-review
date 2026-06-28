@@ -1,0 +1,9 @@
+pipelines:
+  pull-requests:
+    '**':
+      - step:
+          name: Cascade Review
+          image: python:3.11-slim
+          script:
+            - pip install cascade-review
+            - git diff origin/$BITBUCKET_PR_DESTINATION_BRANCH...HEAD | cascade --no-llm --severity-gate high

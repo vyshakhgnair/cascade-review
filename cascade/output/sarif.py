@@ -4,7 +4,7 @@ from cascade.analyzers.static.secrets import SecretFinding
 
 LEVEL = {"CRITICAL": "error", "MAJOR": "error", "MINOR": "warning", "INFO": "note"}
 
-def render(sonar: List[SonarFinding], secrets: List[SecretFinding]) -> dict:
+def render(sonar: List[SonarFinding], secrets: List[SecretFinding], breakers=None) -> dict:
     results = []
     for f in sonar:
         results.append({
@@ -19,6 +19,13 @@ def render(sonar: List[SonarFinding], secrets: List[SecretFinding]) -> dict:
             "level": "error",
             "message": {"text": f"Potential {s.secret_type} detected"},
             "locations": [{"physicalLocation": {"artifactLocation": {"uri": s.file}}}],
+        })
+    for b in (breakers or []):
+        results.append({
+            "ruleId": f"cascade/{b.check}",
+            "level": LEVEL.get(b.severity, "warning"),
+            "message": {"text": b.description},
+            "locations": [{"physicalLocation": {"artifactLocation": {"uri": b.file}}}],
         })
     return {
         "version": "2.1.0",

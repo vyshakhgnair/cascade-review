@@ -1,0 +1,23 @@
+trigger: none
+
+pr:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - task: UsePythonVersion@0
+    inputs:
+      versionSpec: '3.11'
+
+  - script: pip install cascade-review
+    displayName: Install cascade-review
+
+  - script: |
+      git diff origin/$(System.PullRequest.TargetBranch)...HEAD | cascade --no-llm --severity-gate high
+    displayName: Run cascade review
+    env:
+      GROQ_API_KEY: $(GROQ_API_KEY)

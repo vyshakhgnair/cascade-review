@@ -1,0 +1,36 @@
+# .cascade-rules.yml — review policy as code
+# Place this in your repo root to enforce team standards.
+
+rules:
+  - name: no-console-log
+    message: "Remove console.log before merging"
+    files: "\\.(js|ts|tsx)$"
+    pattern: "console\\.log\\("
+    severity: WARNING
+
+  - name: no-debugger
+    message: "Debugger statement left in code"
+    pattern: "\\bdebugger\\b"
+    severity: HIGH
+
+  - name: no-todo-in-prod
+    message: "TODO/FIXME should be resolved before merging to main"
+    pattern: "(TODO|FIXME|HACK|XXX):"
+    severity: WARNING
+
+  - name: no-axios-in-services
+    message: "Use the shared HTTP client, not raw axios"
+    files: "services/"
+    forbidden_imports: ["axios"]
+    severity: WARNING
+
+  - name: max-file-size
+    message: "File too large — consider splitting"
+    max_lines: 500
+    severity: WARNING
+
+  - name: tests-required
+    message: "Test file should include at least one assertion"
+    files: "(test_|spec\\.|__test)"
+    require: "(assert|expect|should)"
+    severity: HIGH

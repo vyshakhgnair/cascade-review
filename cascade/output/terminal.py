@@ -26,7 +26,7 @@ SEVERITY_COLOR = {
 def clr(text, sev): return f"{SEVERITY_COLOR.get(sev, '')}{text}{R}"
 def hdr(title): print(f"\n{DIM}{'─' * 58}{R}\n  {BOLD}{title}{R}")
 
-def print_report(summary, secrets, sonar, blast, risk, drifts, bugs, llm_det, fixes, config):
+def print_report(summary, secrets, sonar, blast, risk, drifts, bugs, llm_det, fixes, breakers, conflicts, policy_violations, config):
     print(f"\n{BOLD}  cascade-review{R}  {DIM}github.com/vyshakhgnair/cascade-review{R}")
 
     # Change summary
@@ -88,6 +88,28 @@ def print_report(summary, secrets, sonar, blast, risk, drifts, bugs, llm_det, fi
         hdr("BUGS FOUND")
         for b in bugs:
             print(f"  {clr(b.get('severity', 'WARNING'), b.get('severity', 'WARNING'))}  {b['description']}")
+
+    # Build breakers
+    if breakers:
+        hdr(f"{RED}🚧 BUILD BREAKERS{R}")
+        for b in breakers:
+            print(f"  {clr(b.severity, b.severity):<22} {DIM}[{b.check}]{R}  {b.description}")
+            print(f"  {DIM}  → {b.file}{R}")
+
+    # Version conflicts
+    if conflicts:
+        hdr(f"{YLW}⚠ VERSION CONFLICTS{R}")
+        for c in conflicts:
+            print(f"  {clr('HIGH', 'HIGH')}  {c.package}")
+            for loc, ver in c.locations.items():
+                print(f"  {DIM}  → {loc}: {ver}{R}")
+
+    # Policy violations
+    if policy_violations:
+        hdr("POLICY VIOLATIONS")
+        for v in policy_violations:
+            print(f"  {clr(v.severity, v.severity):<22} {DIM}[{v.rule}]{R}  {v.description}")
+            print(f"  {DIM}  → {v.file}{R}")
 
     # Fix suggestions
     if fixes:

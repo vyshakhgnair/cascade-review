@@ -40,6 +40,13 @@ inputs:
     description: Skip LLM analysis, run static checks only (no API key needed)
     required: false
     default: "false"
+  redact:
+    description: Strip literals/values from code before sending to LLM (privacy protection)
+    required: false
+    default: "false"
+  severity_gate:
+    description: "Fail if findings at or above this severity: critical / high / medium / warning / low"
+    required: false
   fail_on_secrets:
     description: Fail the action if secrets are detected
     required: false
@@ -69,6 +76,8 @@ runs:
             ${{ inputs.provider != '' && format('--provider {0}', inputs.provider) || '' }} \
             ${{ inputs.model != '' && format('--model {0}', inputs.model) || '' }} \
             ${{ inputs.no_llm == 'true' && '--no-llm' || '' }} \
+            ${{ inputs.redact == 'true' && '--redact' || '' }} \
+            ${{ inputs.severity_gate != '' && format('--severity-gate {0}', inputs.severity_gate) || '' }} \
           2>&1) || EXIT_CODE=$?
         echo "$OUTPUT"
         echo "cascade_output<<EOF" >> "$GITHUB_OUTPUT"
@@ -76,6 +85,10 @@ runs:
         echo "EOF" >> "$GITHUB_OUTPUT"
         if [ "${{ inputs.output_format }}" = "sarif" ]; then
           echo "$OUTPUT" > cascade-results.sarif
+        fi
+        if [ "${EXIT_CODE:-0}" -eq 3 ]; then
+          echo "::error::Severity gate failed — findings exceed threshold"
+          exit 3
         fi
         if [ "${EXIT_CODE:-0}" -eq 2 ] && [ "${{ inputs.fail_on_secrets }}" = "true" ]; then
           echo "::error::Secrets detected in diff — review cascade output above"

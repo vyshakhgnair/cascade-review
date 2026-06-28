@@ -1,0 +1,11 @@
+cascade-review:
+  stage: test
+  image: python:3.11-slim
+  variables:
+    GROQ_API_KEY: $GROQ_API_KEY
+  script:
+    - pip install cascade-review
+    - git diff origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME...HEAD | cascade --output markdown --severity-gate high
+  rules:
+    - if: $CI_MERGE_REQUEST_IID
+  allow_failure: false

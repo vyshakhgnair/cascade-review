@@ -4,7 +4,7 @@ from cascade.analyzers.static.sonar import SonarFinding
 from cascade.analyzers.static.blast_radius import BlastRadiusResult
 from cascade.analyzers.static.regression_risk import RegressionRisk
 
-def render(summary, secrets, sonar, blast, risk, bugs, fixes=None) -> str:
+def render(summary, secrets, sonar, blast, risk, bugs, fixes=None, breakers=None, conflicts=None, policy_violations=None) -> str:
     lines = ["## Cascade Review\n"]
 
     if summary.get("summary"):
@@ -38,6 +38,28 @@ def render(summary, secrets, sonar, blast, risk, bugs, fixes=None) -> str:
         lines.append("### Bugs Found\n")
         for b in bugs:
             lines.append(f"- **{b.get('severity', 'WARNING')}** {b['description']}")
+        lines.append("")
+
+    if breakers:
+        lines.append("### 🚧 Build Breakers\n")
+        lines.append("| Severity | Check | Issue | File |")
+        lines.append("|---|---|---|---|")
+        for b in breakers:
+            lines.append(f"| {b.severity} | `{b.check}` | {b.description} | `{b.file}` |")
+        lines.append("")
+
+    if conflicts:
+        lines.append("### ⚠ Version Conflicts\n")
+        for c in conflicts:
+            lines.append(f"- **{c.package}**: {', '.join(f'`{f}: {v}`' for f, v in c.locations.items())}")
+        lines.append("")
+
+    if policy_violations:
+        lines.append("### Policy Violations\n")
+        lines.append("| Severity | Rule | Issue | File |")
+        lines.append("|---|---|---|---|")
+        for v in policy_violations:
+            lines.append(f"| {v.severity} | `{v.rule}` | {v.description} | `{v.file}` |")
         lines.append("")
 
     if fixes:
