@@ -8,7 +8,7 @@ def write_audit_log(results: dict, config: dict, provider: str = None, model: st
                     redacted: bool = False, output_path: str = None):
     entry = {
         "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
-        "version": "0.2.0",
+        "version": "0.2.1",
         "provider": provider,
         "model": model,
         "redacted": redacted,

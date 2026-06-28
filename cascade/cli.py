@@ -166,7 +166,7 @@ def main():
         prog="cascade",
         description="AI code reviewer — SonarQube simulation, blast radius, smart model routing.",
     )
-    parser.add_argument("--version", action="version", version="cascade-review 0.2.0")
+    parser.add_argument("--version", action="version", version="cascade-review 0.2.1")
     parser.add_argument("--staged", action="store_true", help="Review staged changes only")
     parser.add_argument("--tier", choices=["local", "mid", "frontier"], help="Force model tier")
     parser.add_argument("--provider", choices=list(PROVIDERS), help="Override provider")
