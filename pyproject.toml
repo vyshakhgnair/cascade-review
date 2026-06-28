@@ -8,7 +8,7 @@ version = "0.2.0"
 description = "AI code reviewer with SonarQube simulation, blast radius analysis, and smart model routing"
 readme = "README.md"
 license = { text = "MIT" }
-authors = [{ name = "Vyshakh G Nair", email = "vyshakh@loqo.ai" }]
+authors = [{ name = "Vyshakh G Nair", email = "vyshakhgnair.cvr@gmail.com" }]
 keywords = ["code-review", "ai", "llm", "sonarqube", "static-analysis", "developer-tools"]
 classifiers = [
     "Development Status :: 3 - Alpha",
