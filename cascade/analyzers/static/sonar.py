@@ -73,6 +73,24 @@ def _check_python(file: FileDiff) -> List[SonarFinding]:
             description="Generic Exception raised — use a specific exception class",
         ))
 
+    # S5754: Bare except should re-raise or catch specific exceptions
+    # Severity and debt were inferred from codebase patterns (Since rules onSonarQube portal are unavailable)
+    # Matches S2077 severity (CRITICAL) as reliability-critical like security issues
+    for line in file.added_lines:
+        stripped = line.strip()
+        if re.match(r'except\s*:\s*', stripped):
+            findings.append(SonarFinding(
+                rule_id="S5754", file=file.path, severity="CRITICAL", debt="15min",
+                description="Bare except catches all exceptions including SystemExit and KeyboardInterrupt — specify exception types or re-raise",
+            ))
+            break
+        if re.match(r'except\s+(BaseException|SystemExit)', stripped):
+            findings.append(SonarFinding(
+                rule_id="S5754", file=file.path, severity="CRITICAL", debt="15min",
+                description="Catching BaseException/SystemExit without re-raising prevents proper program termination",
+            ))
+            break
+
     # S1066: Collapsible if statements
     lines = file.added_lines
     for i in range(len(lines) - 1):
